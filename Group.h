@@ -9,20 +9,29 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "Line.h"
+
+
 #include "Polygon.h"
+
+
 
 class CGroup  
 {
 public:
-	int PolygonCount;
-	CPolygon* Polygons;
+	CArray <CPolygon,CPolygon> Polygons;
+	
+	//int PolygonCount;
+	//CPolygon* Polygons;
 	double a,t,p;
 	bool Visible;
-	CLine* Lines;
-	int LineCount;
 
-	double x,y,z;
+	double x,y,z;		//position
+	double fx,fy,fz;	//forces
+	double dx,dy,dz;	//momentum
+	double sx,sy,sz;	//spin
+	double rx,ry,rz;	//rotation forces
+
+	double exp,dexp;
 
 	CGroup();
 	virtual ~CGroup();

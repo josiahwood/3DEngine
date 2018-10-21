@@ -15,6 +15,9 @@
 #define IDC_DOWN2                       1006
 #define IDC_LEFT2                       1007
 #define IDC_JOYSTICK                    1009
+#define IDC_XPER                        1017
+#define IDC_YPER                        1018
+#define IDC_CUT                         1020
 
 // Next default values for new objects
 // 
@@ -23,7 +26,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1016
+#define _APS_NEXT_CONTROL_VALUE         1021
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

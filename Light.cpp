@@ -1,10 +1,10 @@
-// Line.cpp: implementation of the CLine class.
+// Light.cpp: implementation of the CLight class.
 //
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
 #include "3DEngine.h"
-#include "Line.h"
+#include "Light.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -16,12 +16,12 @@ static char THIS_FILE[]=__FILE__;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CLine::CLine()
+CLight::CLight()
 {
 
 }
 
-CLine::~CLine()
+CLight::~CLight()
 {
 
 }

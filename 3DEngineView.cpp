@@ -10,6 +10,7 @@
 #include "math.h"
 
 #include "mmsystem.h"
+#include "wingdi.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,16 +25,15 @@ IMPLEMENT_DYNCREATE(CMy3DEngineView, CFormView)
 
 BEGIN_MESSAGE_MAP(CMy3DEngineView, CFormView)
 	//{{AFX_MSG_MAP(CMy3DEngineView)
-	ON_BN_CLICKED(IDC_UP, OnUp)
-	ON_BN_CLICKED(IDC_RIGHT, OnRight)
-	ON_BN_CLICKED(IDC_DOWN, OnDown)
-	ON_BN_CLICKED(IDC_LEFT, OnLeft)
-	ON_BN_CLICKED(IDC_UP2, OnUp2)
-	ON_BN_CLICKED(IDC_RIGHT2, OnRight2)
-	ON_BN_CLICKED(IDC_DOWN2, OnDown2)
-	ON_BN_CLICKED(IDC_LEFT2, OnLeft2)
 	ON_WM_TIMER()
-	ON_BN_CLICKED(IDC_JOYSTICK, OnJoystick)
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_WM_RBUTTONDOWN()
+	ON_WM_RBUTTONUP()
+	ON_WM_SIZE()
+	ON_WM_KEYDOWN()
+	ON_WM_KEYUP()
 	//}}AFX_MSG_MAP
 	// Standard printing commands
 	ON_COMMAND(ID_FILE_PRINT, CFormView::OnFilePrint)
@@ -51,16 +51,27 @@ CMy3DEngineView::CMy3DEngineView()
 	//}}AFX_DATA_INIT
 	// TODO: add construction code here
 
-	COLORREF color;
-	color=RGB(255,0,0);
-	RedPen.CreatePen(0,1,color);
-	color=RGB(127,127,255);
-	BluePen.CreatePen(0,1,color);
-	PolygonCount=0;
+	joyon=false;
+	LButtonDown=false;
+
+	KeyUp=false;
+	KeyDown=false;
+	KeyLeft=false;
+	KeyRight=false;
+
+	KeyB=false;
+
+	PlayerIndex=0;
+
+	m_Cut=0;
+
+	stimer=0;
 }
 
 CMy3DEngineView::~CMy3DEngineView()
 {
+	Bitmap.DeleteObject();
+	tempdc.DeleteDC();
 }
 
 void CMy3DEngineView::DoDataExchange(CDataExchange* pDX)
@@ -79,10 +90,27 @@ BOOL CMy3DEngineView::PreCreateWindow(CREATESTRUCT& cs)
 }
 
 void CMy3DEngineView::OnInitialUpdate()
-{
+{	
 	CFormView::OnInitialUpdate();
 	ResizeParentToFit();
 
+	//CRect rect;
+	//m_Joystick.GetWindowRect(&rect);
+
+	//m_Joystick.ScreenToClient(&rect);
+
+	//LeftBorder=rect.Width()*1.5;
+	LeftBorder=0;
+	
+	CMy3DEngineDoc* doc=GetDocument();
+	CDC* dc=GetDC();
+
+	Bitmap.DeleteObject();
+	Bitmap.CreateCompatibleBitmap(dc,1,1);
+	tempdc.DeleteDC();
+	tempdc.CreateCompatibleDC(dc);
+	tempdc.SelectObject(Bitmap);
+	ReleaseDC(dc);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -134,273 +162,40 @@ CMy3DEngineDoc* CMy3DEngineView::GetDocument() // non-debug version is inline
 /////////////////////////////////////////////////////////////////////////////
 // CMy3DEngineView message handlers
 
+#define STEREO 0
+
 void CMy3DEngineView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint) 
 {
+
 	CMy3DEngineDoc* doc=GetDocument();
-
-	if(doc->world.ca<0)
-		doc->world.ca+=360;
-	else if(doc->world.ca>=360)
-		doc->world.ca-=360;
-
-	World=doc->world;
-
-	dc=GetDC();
-
-	dc->Rectangle(0,0,World.vw,World.vh);
-
-	//for(int counter=0;counter<1;counter++)
-	//{
-		/*COLORREF color;
-		if(counter==0)
-		{
-			World.cx-=.4;
-			dc->SelectObject(&RedPen);
-		}
-		else
-		{
-			World.cx+=.8;
-			dc->SelectObject(&BluePen);
-		}*/
 	
-	if(PolygonCount>0)
-		delete[]Polygons;
-	PolygonCount=0;
-	CLine l;
-	CPolygon pg;
-	double a,t,p,d;
+	CDC* dc=GetDC();
+	
+	UpdateData();
+	doc->world.wall=(double)m_Cut/1.5+1;
+	
+#if STEREO
+	doc->world.cx-=5;
+	doc->world.dc=&tempdc;
+	doc->world.Draw();
 
-	for(int x=0;x<World.GroupCount;x++)
-	{	
-		if(World.Groups[x].Visible)
-		{
-			for(int y=0;y<World.Groups[x].LineCount;y++)
-			{	
-				l=World.Groups[x].Lines[y];
+	dc->BitBlt( 0,0,doc->world.vw,doc->world.vh,&tempdc,0,0,SRCCOPY);
 
-				if(l.y1!=0 || l.z1!=0)
-				{
-					d=sqrt(pow(l.y1,2)+pow(l.z1,2));
-					t=GetA(l.y1,l.z1);
-					t+=World.Groups[x].t;
-					if(t<0)
-						t+=360;
-					if(t>=360)
-						t-=360;
-					l.y1=GetX(t,d);
-					l.z1=GetY(t,d);
-				}
+	doc->world.cx+=10;
+	doc->world.dc=&tempdc;
+	doc->world.Draw();
 
-				if(l.y2!=0 || l.z2!=0)
-				{
-					d=sqrt(pow(l.y2,2)+pow(l.z2,2));
-					t=GetA(l.y2,l.z2);
-					t+=World.Groups[x].t;
-					if(t<0)
-						t+=360;
-					if(t>=360)
-						t-=360;
-					l.y2=GetX(t,d);
-					l.z2=GetY(t,d);
-				}
+	dc->BitBlt( doc->world.vw+1,0,doc->world.vw,doc->world.vh,&tempdc,0,0,SRCCOPY);
 
-				if(l.x1!=0 || l.z1!=0)
-				{
-					d=sqrt(pow(l.x1,2)+pow(l.z1,2));
-					p=GetA(l.x1,l.z1);
-					p+=World.Groups[x].p;
-					if(p<0)
-						a+=360;
-					if(p>=360)
-						p-=360;
-					l.x1=GetX(p,d);
-					l.z1=GetY(p,d);
-				}
+	doc->world.cx-=5;
+#else
+	doc->world.dc=&tempdc;
+	doc->world.Draw();
 
-				if(l.x2!=0 || l.z2!=0)
-				{
-					d=sqrt(pow(l.x2,2)+pow(l.z2,2));
-					p=GetA(l.x2,l.z2);
-					p+=World.Groups[x].p;
-					if(p<0)
-						p+=360;
-					if(p>=360)
-						p-=360;
-					l.x2=GetX(p,d);
-					l.z2=GetY(p,d);
-				}
+	dc->BitBlt(LeftBorder,0,doc->world.vw,doc->world.vh,&tempdc,0,0,SRCCOPY);
+#endif
 
-				if(l.x1!=0 || l.y1!=0)
-				{
-					d=sqrt(pow(l.x1,2)+pow(l.y1,2));
-					a=GetA(l.x1,l.y1);
-					a+=World.Groups[x].a;
-					if(a<0)
-						a+=360;
-					if(a>=360)
-						a-=360;
-					l.x1=GetX(a,d);
-					l.y1=GetY(a,d);
-				}
-
-				if(l.x2!=0 || l.y2!=0)
-				{
-					d=sqrt(pow(l.x2,2)+pow(l.y2,2));
-					a=GetA(l.x2,l.y2);
-					a+=World.Groups[x].a;
-					if(a<0)
-						a+=360;
-					if(a>=360)
-						a-=360;
-					l.x2=GetX(a,d);
-					l.y2=GetY(a,d);
-				}
-
-				l.x1+=World.Groups[x].x;
-				l.y1+=World.Groups[x].y;
-				l.z1+=World.Groups[x].z;
-				l.x2+=World.Groups[x].x;
-				l.y2+=World.Groups[x].y;
-				l.z2+=World.Groups[x].z;
-				DrawLine(l);
-			}
-
-			for(y=0;y<World.Groups[x].PolygonCount;y++)
-			{	
-				pg=World.Groups[x].Polygons[y];
-
-				for(int z=0;z<World.Groups[x].Polygons[y].PointCount;z++)
-				{
-					if(pg.y[z]!=0 || pg.z[z]!=0)
-					{
-						d=sqrt(pow(pg.y[z],2)+pow(pg.z[z],2));
-						t=GetA(pg.y[z],pg.z[z]);
-						t+=World.Groups[x].t;
-						if(t<0)
-							t+=360;
-						if(t>=360)
-							t-=360;
-						pg.y[z]=GetX(t,d);
-						pg.z[z]=GetY(t,d);
-					}
-
-					if(pg.x[z]!=0 || pg.z[z]!=0)
-					{
-						d=sqrt(pow(pg.x[z],2)+pow(pg.z[z],2));
-						p=GetA(pg.x[z],pg.z[z]);
-						p+=World.Groups[x].p;
-						if(p<0)
-							a+=360;
-						if(p>=360)
-							p-=360;
-						pg.x[z]=GetX(p,d);
-						pg.z[z]=GetY(p,d);
-					}
-
-					if(pg.x[z]!=0 || pg.y[z]!=0)
-					{
-						d=sqrt(pow(pg.x[z],2)+pow(pg.y[z],2));
-						a=GetA(pg.x[z],pg.y[z]);
-						a+=World.Groups[x].a;
-						if(a<0)
-							a+=360;
-						if(a>=360)
-							a-=360;
-						pg.x[z]=GetX(a,d);
-						pg.y[z]=GetY(a,d);
-					}
-
-					pg.x[z]+=World.Groups[x].x;
-					pg.y[z]+=World.Groups[x].y;
-					pg.z[z]+=World.Groups[x].z;
-				}
-				AddPolygon(&pg);
-			}
-		}
-	}
-	DrawPolygons();
-}
-
-void CMy3DEngineView::DrawLine(CLine Line)
-{
-	double x1,y1,x2,y2,dx,dy,dz,dt,a,t;
-
-	dx=Line.x1-World.cx;
-	dy=Line.y1-World.cy;
-	dz=Line.z1-World.cz;
-	dt=sqrt(pow(dx,2)+pow(dy,2));
-
-	a=GetA(dx,dy);
-	t=GetA(dt,dz);
-	//a=atan(dy/dx)/3.14159*180;
-	//t=atan(dz/dt)/3.14159*180;
-
-	//if(dx<0)
-	//	a+=180;
-	//else if(dx>0 && dy<0)
-	//	a+=360;
-
-	//if(dt<0)
-	//	t+=180;
-	//else if(dt>0 && dz<0)
-	//	t+=360;
-
-	if(World.ca<90 && a>270)
-		a-=360;
-	else if(World.ca>270 && a<90)
-		a+=360;
-	if(World.ct<90 && t>270)
-		t-=360;
-	else if(World.ct>270 && a<90)
-		t+=360;
-
-	//if(dy>0 && dx==0)
-	//	a=90;
-	//else if(dy<0 && dx==0)
-	//	a=270;
-
-	x1=World.vw-((a-(World.ca-(World.cw/2)))/World.cw*World.vw);
-	y1=World.vh-((t-(World.ct-(World.ch/2)))/World.ch*World.vh);
-
-	dx=Line.x2-World.cx;
-	dy=Line.y2-World.cy;
-	dz=Line.z2-World.cz;
-	dt=sqrt(pow(dx,2)+pow(dy,2));
-
-	a=GetA(dx,dy);
-	t=GetA(dt,dz);
-	//a=atan(dy/dx)/3.14159*180;
-	//t=atan(dz/dt)/3.14159*180;
-
-	//if(dx<0)
-	//	a+=180;
-	//else if(dx>0 && dy<0)
-	//	a+=360;
-
-	//if(dt<0)
-	//	t+=180;
-	//else if(dt>0 && dz<0)
-	//	t+=360;
-
-	if(World.ca<90 && a>270)
-		a-=360;
-	else if(World.ca>270 && a<90)
-		a+=360;
-	if(World.ct<90 && t>270)
-		t-=360;
-	else if(World.ct>270 && a<90)
-		t+=360;
-
-	//if(dy>0 && dx==0)
-	//	a=90;
-	//else if(dy<0 && dx==0)
-	//	a=270;
-
-	x2=World.vw-((a-(World.ca-(World.cw/2)))/World.cw*World.vw);
-	y2=World.vh-((t-(World.ct-(World.ch/2)))/World.ch*World.vh);
-
-	dc->MoveTo(x1,y1);
-	dc->LineTo(x2,y2);
+	ReleaseDC(dc);
 }
 
 void CMy3DEngineView::OnDraw(CDC* pDC) 
@@ -409,123 +204,203 @@ void CMy3DEngineView::OnDraw(CDC* pDC)
 	
 }
 
-void CMy3DEngineView::OnUp() 
-{	
-	GetDocument()->world.cy++;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
-void CMy3DEngineView::OnRight() 
-{
-	GetDocument()->world.cx++;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
-void CMy3DEngineView::OnDown() 
-{
-	GetDocument()->world.cy--;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
-void CMy3DEngineView::OnLeft() 
-{
-	GetDocument()->world.cx--;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
-void CMy3DEngineView::OnUp2() 
-{
-	GetDocument()->world.ct++;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
-void CMy3DEngineView::OnRight2() 
-{
-	GetDocument()->world.ca--;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
-void CMy3DEngineView::OnDown2() 
-{
-	GetDocument()->world.ct--;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
-void CMy3DEngineView::OnLeft2()
-{
-	GetDocument()->world.ca++;
-	OnUpdate(NULL,NULL,NULL);
-	
-}
-
 void CMy3DEngineView::OnTimer(UINT nIDEvent)
 {
 	CMy3DEngineDoc* doc=GetDocument();
 
-	doc->world.Groups[0].t++;
-	if(doc->world.Groups[0].t>=360)
-		doc->world.Groups[0].t-=360;
+	switch(nIDEvent)
+	{
+	case 0:
+		GetInput();
+	
+		/*doc->world.Groups[0].t++;
+		if(doc->world.Groups[0].t==360)
+			doc->world.Groups[0].t=0;
 
-	doc->world.Groups[0].a+=2;
-	if(doc->world.Groups[0].a>=360)
-		doc->world.Groups[0].a-=360;
+		doc->world.Groups[0].a+=2;
+		if(doc->world.Groups[0].a==360)
+			doc->world.Groups[0].a=0;
 
-	doc->world.Groups[0].p+=3;
-	if(doc->world.Groups[0].p>=360)
-		doc->world.Groups[0].p-=360;
+		doc->world.Groups[0].p+=3;
+		if(doc->world.Groups[0].p==360)
+			doc->world.Groups[0].p=0;
 
+		doc->world.Groups[1].t++;
+		if(doc->world.Groups[1].t==360)
+			doc->world.Groups[1].t=0;
+
+		doc->world.Groups[1].a+=2;
+		if(doc->world.Groups[1].a==360)
+			doc->world.Groups[1].a=0;
+
+		doc->world.Groups[1].p+=3;
+		if(doc->world.Groups[1].p==360)
+			doc->world.Groups[1].p=0;
+
+		doc->world.Groups[2].t++;
+		if(doc->world.Groups[2].t==360)
+			doc->world.Groups[2].t=0;
+
+		doc->world.Groups[2].a+=2;
+		if(doc->world.Groups[2].a==360)
+			doc->world.Groups[2].a=0;
+
+		doc->world.Groups[2].p+=3;
+		if(doc->world.Groups[2].p==360)
+			doc->world.Groups[2].p=0;*/
+
+		//OnUpdate(NULL,NULL,NULL);
+
+		break;
+	case 1:
+		return;
+		CDC* dc=GetDC();
+		
+		char* b;
+		b=new char[256];
+		b=itoa(doc->world.DrawCount,b,10);
+		dc->TextOut(410,5,b);
+		doc->world.DrawCount=0;
+		delete[]b;
+
+		ReleaseDC(dc);
+	}
+	
 	OnUpdate(NULL,NULL,NULL);
+	
+	
+	CFormView::OnTimer(nIDEvent);
+	
+}
 
-	/*JOYINFO info;
+#define JOYSTICK 0
+
+void CMy3DEngineView::Joystick() 
+{
+	joyon=!joyon;
+	
+#if JOYSTICK
+	if(joyon)
+	{
+		SetTimer(1,1000,NULL);
+		joySetCapture(m_hWnd,JOYSTICKID1, 200, TRUE);
+		joySetThreshold(JOYSTICKID1,1);
+		joyGetDevCaps(JOYSTICKID1,&JoyCap,sizeof(JOYCAPS));
+	}
+#endif
+	
+	while(joyon)
+	{
+		OnTimer(0);
+		GetInput();
+		
+
+		MSG msg;
+
+		// Process existing messages in the application's message queue.
+		// When the queue is empty, do clean up and return.
+		while (::PeekMessage(&msg,NULL,0,0,PM_NOREMOVE))
+		{
+			if (!AfxGetThread()->PumpMessage())
+				return;
+		}
+	}
+	
+#if JOYSTICK
+	joyReleaseCapture(JOYSTICKID1);
+#endif
+
+	KillTimer(1);
+}
+
+void CMy3DEngineView::GetInput()
+{
+	//return;
+	
+#if JOYSTICK
+	JOYINFO info;
 
 	joyGetPos(JOYSTICKID1, &info);
 	
 	double xval=info.wXpos;
 	double xmax=JoyCap.wXmax;
 	double xmin=JoyCap.wXmin;
-	double xmid=(xmax-xmin)/double(2);
-	double xlen=xmax-xmid;
-	double xscale=xlen/double(6);
-	double xscaled=(xval-xmid)/xscale;
+	double xper=((xval-xmin)/(xmax-xmin)*2.0)-1.0;
 
 	double yval=info.wYpos;
 	double ymax=JoyCap.wYmax;
 	double ymin=JoyCap.wYmin;
-	double ymid=(ymax-ymin)/double(2);
-	double ylen=ymax-ymid;
-	double yscale=ylen/double(6);
-	double yscaled=(yval-ymid)/yscale;
+	double yper=((yval-ymin)/(ymax-ymin)*2.0)-1.0;
 
-	if(fabs(xscaled)<1)
-		xscaled=0;
-	else
-		xscaled--;
-	if(fabs(yscaled)<1)
-		yscaled=0;
-	else
-		yscaled--;
+	double zval=info.wZpos;
+	double zmax=JoyCap.wZmax;
+	double zmin=JoyCap.wZmin;
+	double zper=-(((zval-zmin)/(zmax-zmin)*2.0)-1.0);
 
-	yscaled=-yscaled;
+	bool Button2=info.wButtons & JOY_BUTTON2;
+	bool Button1=info.wButtons & JOY_BUTTON1;
+#else
+	double xper=0;
+	if(KeyLeft)
+		xper--;
+	if(KeyRight)
+		xper++;
+	double yper=0;
+	if(KeyUp)
+		yper--;
+	if(KeyDown)
+		yper++;
+	static double zper=0;
+	if(KeyPlus)
+		zper+=.05;
+	if(KeyMinus)
+		zper-=.05;
+
+	bool Button2=KeySpace;
+	bool Button1=KeyB;
+#endif
 
 	CMy3DEngineDoc* doc=GetDocument();
 
-	doc->world.ca-=xscaled;
-	doc->world.ca=fmod(doc->world.ca,360);
-	double dx,dy,ds;
-	dx=1;
-	dy=tan(doc->world.ca/180*3.14159);
-	ds=sqrt(pow(dx,2)+pow(dy,2))/yscaled;
-	dx/=ds;
-	dy/=ds;
+	doc->world.Groups[PlayerIndex].a-=xper*.50;
+	doc->world.ct=-zper*45;
+	//doc->world.ct+=yper*.20;
+	double dx,dy,ds,da;
+	//if(yper>=0)
+		da=doc->world.Groups[PlayerIndex].a/180*3.14159;
+	//else
+	//	da=3.14159-(doc->world.Groups[PlayerIndex].a/180*3.14159);
+	ds=-yper/3;
+	dx=cos(da);
+	dy=sin(da);
+	dx*=ds;
+	dy*=ds;
+
+	if(Button2 && doc->world.Groups[PlayerIndex].z<=0)
+	{
+		doc->world.Groups[PlayerIndex].fz+=.2;
+	}
+	//doc->world.Groups[PlayerIndex].fz-=.001;
+	/*if(doc->world.Groups[PlayerIndex].z<0)
+	{
+		doc->world.Groups[PlayerIndex].z=0;
+		doc->world.Groups[PlayerIndex].fz=0;
+	}*/
+	//doc->world.Groups[PlayerIndex].z+=doc->world.Groups[PlayerIndex].dz;
+
+	doc->world.Groups[PlayerIndex].x+=dx;
+	doc->world.Groups[PlayerIndex].y+=dy;
+
+	doc->world.ca=doc->world.Groups[PlayerIndex].a;
+	dx=-cos(doc->world.ca/180*3.14159)*50*cos(doc->world.ct/180*3.14159);
+	dy=-sin(doc->world.ca/180*3.14159)*50*cos(doc->world.ct/180*3.14159);
+	doc->world.cx=doc->world.Groups[PlayerIndex].x+dx;
+	doc->world.cy=doc->world.Groups[PlayerIndex].y+dy;
+
+	dy=sin(doc->world.ct/180*3.14159)*50;
+	doc->world.cz=-dy+doc->world.Groups[PlayerIndex].z;
 	
-	if((doc->world.ca>90 && doc->world.ca<180) || doc->world.ca>270)
+	/*if((doc->world.ca>90 && doc->world.ca<180) || doc->world.ca>270)
 	{
 		doc->world.cx-=dx;
 		doc->world.cy-=dy;
@@ -539,210 +414,382 @@ void CMy3DEngineView::OnTimer(UINT nIDEvent)
 	{
 		doc->world.cx+=dx;
 		doc->world.cy+=dy;
+	}*/
+
+	/*doc->world.dc->Rectangle(0,410,50,460);
+	doc->world.dc->MoveTo(0,435);
+	doc->world.dc->LineTo(50,435);
+	doc->world.dc->MoveTo(25,410);
+	doc->world.dc->LineTo(25,460);
+	doc->world.dc->Rectangle(25+xper*25-2,435+yper*25-2,25+xper*25+2,435+yper*25+2);
+	doc->world.dc->Rectangle(60,410,80,460);
+	doc->world.dc->Rectangle(60,435,80,435+zper*-25.0);*/
+
+	if(Button1)
+		Shoot();
+	stimer++;
+
+	doc->world.Physics();
+	UpdateData(FALSE);
+}
+
+void CMy3DEngineView::OnMouseMove(UINT nFlags, CPoint point) 
+{
+	CMy3DEngineDoc* doc=GetDocument();
+
+	static drag=0;
+
+	if(!drag)
+		MouseStart=point;
+
+	int dx=point.x-MouseStart.x;
+	int dy=point.y-MouseStart.y;
+	
+	if(nFlags & MK_LBUTTON)
+	{
+		doc->world.ca-=point.x-MouseStart.x;
+		doc->world.ct-=point.y-MouseStart.y;
 	}
+	else if(nFlags & MK_RBUTTON)
+	{
+		double dx,dy,ds;
+		
+		dx=cos(doc->world.ca/180*3.14159);
+		dy=sin(doc->world.ca/180*3.14159);
+		ds=MouseStart.y-point.y;
+		dx*=ds;
+		dy*=ds;
+		doc->world.cx+=dx;
+		doc->world.cy+=dy;
+
+		dx=cos((doc->world.ca-90)/180*3.14159);
+		dy=sin((doc->world.ca-90)/180*3.14159);
+		ds=point.x-MouseStart.x;
+		dx*=ds;
+		doc->world.cx+=dx;
+		dy*=ds;
+		doc->world.cy+=dy;
+	}
+	else if(nFlags & MK_MBUTTON)
+	{
+		UpdateData();
+		m_Cut-=dy;
+		UpdateData(FALSE);
+		doc->world.wall=(double)m_Cut/10.0;
+		//OnReleasedcaptureCut(NULL,NULL);
+	}
+	else if(nFlags & MK_CONTROL)
+	{
+		doc->world.Groups[0].t+=dx;
+		if(doc->world.Groups[0].t==360)
+			doc->world.Groups[0].t=0;
+
+		doc->world.Groups[0].a+=2*dx;
+		if(doc->world.Groups[0].a==360)
+			doc->world.Groups[0].a=0;
+
+		doc->world.Groups[0].p+=3*dx;
+		if(doc->world.Groups[0].p==360)
+			doc->world.Groups[0].p=0;
+
+		doc->world.Groups[1].t+=dx;
+		if(doc->world.Groups[1].t==360)
+			doc->world.Groups[1].t=0;
+
+		doc->world.Groups[1].a+=2*dx;
+		if(doc->world.Groups[1].a==360)
+			doc->world.Groups[1].a=0;
+
+		doc->world.Groups[1].p+=3*dx;
+		if(doc->world.Groups[1].p==360)
+			doc->world.Groups[1].p=0;
+
+		doc->world.Groups[2].t+=dx;
+		if(doc->world.Groups[2].t==360)
+			doc->world.Groups[2].t=0;
+
+		doc->world.Groups[2].a+=2*dx;
+		if(doc->world.Groups[2].a==360)
+			doc->world.Groups[2].a=0;
+
+		doc->world.Groups[2].p+=3*dx;
+		if(doc->world.Groups[2].p==360)
+			doc->world.Groups[2].p=0;
+	}
+	else if(nFlags & MK_SHIFT)
+	{
+		for(int x=0;x<doc->world.GroupCount;x++)
+		{
+			doc->world.Groups[x].a+=dx;
+			doc->world.Groups[x].t+=dy;
+		}
+	}
+
+	if(nFlags)
+	{
+		MouseStart=point;
+		OnUpdate(NULL,NULL,NULL);
+	}
+
+	drag=nFlags;
+	
+	CFormView::OnMouseMove(nFlags, point);
+}
+
+void CMy3DEngineView::OnLButtonDown(UINT nFlags, CPoint point) 
+{
+	CMy3DEngineDoc* doc=GetDocument();
+
+	if(point.x<doc->world.vw && point.y<doc->world.vh)
+	{
+		LButtonDown=true;
+		MouseStart=point;
+	}
+
+	CFormView::OnLButtonDown(nFlags, point);
+}
+
+void CMy3DEngineView::OnLButtonUp(UINT nFlags, CPoint point) 
+{
+	LButtonDown=false;
+	CFormView::OnLButtonUp(nFlags, point);
+}
+
+void CMy3DEngineView::OnRButtonDown(UINT nFlags, CPoint point) 
+{
+	CMy3DEngineDoc* doc=GetDocument();
+
+	if(point.x<doc->world.vw && point.y<doc->world.vh)
+	{
+		RButtonDown=true;
+		MouseStart=point;
+	}
+	
+	CFormView::OnRButtonDown(nFlags, point);
+}
+
+void CMy3DEngineView::OnRButtonUp(UINT nFlags, CPoint point) 
+{
+	RButtonDown=false;
+	
+	CFormView::OnRButtonUp(nFlags, point);
+}
+
+void CMy3DEngineView::OnSize(UINT nType, int cx, int cy) 
+{
+	CFormView::OnSize(nType, cx, cy);
+	
+	CMy3DEngineDoc* doc=GetDocument();
+	doc->world.vw=cx-LeftBorder;
+	doc->world.vh=cy;
+
+	delete[]doc->world.zbuffer;
+	doc->world.zbuffer=new double[doc->world.vw*doc->world.vh];
+
+	Bitmap.DeleteObject();
+	tempdc.DeleteDC();
+
+	CDC* dc=GetDC();
+	//CMy3DEngineDoc* doc=GetDocument();
+	Bitmap.CreateCompatibleBitmap(dc,doc->world.vw,doc->world.vh);
+	tempdc.CreateCompatibleDC(dc);
+	tempdc.SelectObject(Bitmap);
+
+	doc->world.tbit.DeleteObject();
+	doc->world.tdc.DeleteDC();
+	
+	doc->world.tdc.CreateCompatibleDC(dc);
+	doc->world.tbit.CreateCompatibleBitmap(dc,doc->world.vw,doc->world.vh);
+	doc->world.tdc.SelectObject(doc->world.tbit);
+
+	ReleaseDC(dc);
+}
+
+void CMy3DEngineView::ReleasedcaptureCut(NMHDR* pNMHDR, LRESULT* pResult) 
+{
+	UpdateData();
+	
+	CMy3DEngineDoc* doc=GetDocument();
+	doc->world.wall=(double)m_Cut/10.0;
 
 	OnUpdate(NULL,NULL,NULL);
+
+	*pResult = 0;
+}
+
+void CMy3DEngineView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) 
+{
+	char* c=new char[256];
 	
-	CFormView::OnTimer(nIDEvent);
-	*/
+	switch(nChar)
+	{
+	case 38:	//up
+		KeyUp=true;
+		break;
+	case 40:	//down
+		KeyDown=true;
+		break;
+	case 37:	//left
+		KeyLeft=true;
+		break;
+	case 39:	//right
+		KeyRight=true;
+		break;
+	case 32:	//space
+		KeySpace=true;
+		break;
+	case 66:	//B
+		KeyB=true;
+		break;
+	case 13:	//enter
+		Joystick();
+		break;
+	case 107:	//plus
+		KeyPlus=true;
+		break;
+	case 109:	//minus
+		KeyMinus=true;
+		break;
+#ifdef _DEBUG
+	default:
+		MessageBox((CString)"Down " + itoa(nChar,c,10));
+#endif
+	}
+
+	delete[]c;
+
+	CFormView::OnKeyDown(nChar, nRepCnt, nFlags);
 }
 
-void CMy3DEngineView::OnJoystick() 
-{
-	SetTimer(0,50,NULL);
-	/*static bool joyon=false;
-
-	if(!joyon)
+void CMy3DEngineView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags) 
+{	
+	switch(nChar)
 	{
-		joySetCapture(m_hWnd,JOYSTICKID1, 200, TRUE);
-		joySetThreshold(JOYSTICKID1,1);
-		joyGetDevCaps(JOYSTICKID1,&JoyCap,sizeof(JOYCAPS));
-
-		SetTimer(0,200,NULL);
-	}
-	else
-	{
-		KillTimer(0);
-		joyReleaseCapture(JOYSTICKID1);
-	}
-
-	joyon=!joyon;*/
-	
-}
-
-inline double CMy3DEngineView::GetA(double x, double y)
-{
-	double a=atan(y/x)/3.14159*180;
-
-	if(x<0)
-		a+=180;
-	else if(x>0 && y<0)
-		a+=360;
-
-	if(y>0 && x==0)
-		a=90;
-	else if(y<0 && x==0)
-		a=270;
-
-	return a;
-}
-
-double CMy3DEngineView::GetX(double a, double d)
-{
-	double x=1,y=0,s;
-
-	if(a==90 || a==270)
-		x=0;
-	else
-	{
-		y=tan(a/180*3.14159);
-
-		if(a>90 && a<270)
-			x=-1;
-
-		s=sqrt(1+pow(y,2));
-
-		x*=d;
-		x/=s;
-	}
-
-	return x;
-}
-
-double CMy3DEngineView::GetY(double a, double d)
-{
-	double x=1,y=0,s;
-
-	if(a==90)
-		y=d;
-	else if(a==270)
-		y=-d;
-	else
-	{
-		y=tan(a/180*3.14159);
-
-		if(a<180)
-			y=fabs(y);
-		else
-			y=-fabs(y);
-
-		s=sqrt(1+pow(y,2));
-
-		y*=d;
-		y/=s;
-	}
-
-	return y;
-}
-
-void CMy3DEngineView::DrawPolygon(CPolygon* Polygon)
-{
-	double dx,dy,dz,dt,a,t;
-	double* x;
-	double* y;
-
-	x=new double[Polygon->PointCount];
-	y=new double[Polygon->PointCount];
-
-	for(int c=0;c<Polygon->PointCount;c++)
-	{
-		dx=Polygon->x[c]-World.cx;
-		dy=Polygon->y[c]-World.cy;
-		dz=Polygon->z[c]-World.cz;
-		dt=sqrt(pow(dx,2)+pow(dy,2));
-
-		a=GetA(dx,dy);
-		t=GetA(dt,dz);
-
-		if(World.ca<90 && a>270)
-			a-=360;
-		else if(World.ca>270 && a<90)
-			a+=360;
-		if(World.ct<90 && t>270)
-			t-=360;
-		else if(World.ct>270 && a<90)
-			t+=360;
-
-		x[c]=World.vw-((a-(World.ca-(World.cw/2)))/World.cw*World.vw);
-		y[c]=World.vh-((t-(World.ct-(World.ch/2)))/World.ch*World.vh);
-	}
-
-	POINT* points=new POINT[Polygon->PointCount];
-
-	for(c=0;c<Polygon->PointCount;c++)
-	{
-		points[c].x=x[c];
-		points[c].y=y[c];
-	}
-
-	CBrush* brush=new CBrush;
-	CBrush* oldbrush;
-	brush->CreateSolidBrush(Polygon->color);
-	oldbrush=dc->SelectObject(brush);
-
-	dc->Polygon(points,Polygon->PointCount);
-
-	dc->SelectObject(oldbrush);
-	delete brush;
-}
-
-void CMy3DEngineView::AddPolygon(CPolygon *Polygon)
-{
-	int index=0;
-	double dist=0,dist2=0;
-	for(int x=0;x<Polygon->PointCount;x++)
-	{
-		dist+=sqrt(pow(Polygon->x[x]-World.cx,2)+pow(Polygon->y[x]-World.cy,2)+pow(Polygon->z[x]-World.cz,2));
-	}
-	dist/=Polygon->PointCount;
-
-	for(x=0;x<PolygonCount;x++)
-	{
-		dist2=0;
-		for(int y=0;y<Polygons[x].PointCount;y++)
-		{
-			dist2+=sqrt(pow(Polygons[x].x[y]-World.cx,2)+pow(Polygons[x].y[y]-World.cy,2)+pow(Polygons[x].z[y]-World.cz,2));
-		}
-		dist2/=Polygons[x].PointCount;
-		if(dist>dist2)
-		{
-			index=x;
-			break;
-		}
-		else
-			index=x+1;
+	case 38:	//up
+		KeyUp=false;
+		break;
+	case 40:	//down
+		KeyDown=false;;
+		break;
+	case 37:	//left
+		KeyLeft=false;
+		break;
+	case 39:	//right
+		KeyRight=false;
+		break;
+	case 32:	//space
+		KeySpace=false;
+		break;
+	case 66:	//B
+		KeyB=false;
+		break;
+	case 107:	//plus
+		KeyPlus=false;
+		break;
+	case 109:	//minus
+		KeyMinus=false;
+		break;
 	}
 	
-	if(PolygonCount>0)
-	{
-		CPolygon* tempPolygons=new CPolygon[PolygonCount];
-		for(x=0;x<PolygonCount;x++)
-			tempPolygons[x]=Polygons[x];
-
-		delete[]Polygons;
-		Polygons=new CPolygon[PolygonCount+1];
-
-		for(x=0;x<index;x++)
-			Polygons[x]=tempPolygons[x];
-
-		Polygons[index]=*Polygon;
-
-		for(x=index+1;x<PolygonCount+1;x++)
-			Polygons[x]=tempPolygons[x-1];
-
-		delete[]tempPolygons;
-	}
-	else
-	{
-		Polygons=new CPolygon[1];
-		Polygons[0]=*Polygon;
-	}
-
-	PolygonCount++;
+	CFormView::OnKeyUp(nChar, nRepCnt, nFlags);
 }
 
-void CMy3DEngineView::DrawPolygons()
+void CMy3DEngineView::Shoot()
 {
-	for(int x=0;x<PolygonCount;x++)
-		DrawPolygon(&Polygons[x]);
+	if(stimer<10)
+		return;
+	
+	CMy3DEngineDoc* doc=GetDocument();
+
+	CGroup a;
+
+	CPolygon t;
+
+	a.Polygons.InsertAt(0,t,4);
+
+	//a.Polygons[0].x=new double[4];
+	//a.Polygons[0].y=new double[4];
+	//a.Polygons[0].z=new double[4];
+	a.Polygons[0].PointCount=4;
+	a.Polygons[0].color=RGB(0,255,0);
+	a.Polygons[0].x[0]=0;
+	a.Polygons[0].y[0]=1;
+	a.Polygons[0].z[0]=1;
+	a.Polygons[0].x[1]=0;
+	a.Polygons[0].y[1]=1;
+	a.Polygons[0].z[1]=-1;
+	a.Polygons[0].x[2]=-5;
+	a.Polygons[0].y[2]=1;
+	a.Polygons[0].z[2]=-1;
+	a.Polygons[0].x[3]=-5;
+	a.Polygons[0].y[3]=1;
+	a.Polygons[0].z[3]=1;
+
+	//a.Polygons[1].x=new double[4];
+	//a.Polygons[1].y=new double[4];
+	//a.Polygons[1].z=new double[4];
+	a.Polygons[1].PointCount=4;
+	a.Polygons[1].color=RGB(0,255,0);
+	a.Polygons[1].x[0]=0;
+	a.Polygons[1].y[0]=-1;
+	a.Polygons[1].z[0]=1;
+	a.Polygons[1].x[1]=0;
+	a.Polygons[1].y[1]=-1;
+	a.Polygons[1].z[1]=-1;
+	a.Polygons[1].x[2]=-5;
+	a.Polygons[1].y[2]=-1;
+	a.Polygons[1].z[2]=-1;
+	a.Polygons[1].x[3]=-5;
+	a.Polygons[1].y[3]=-1;
+	a.Polygons[1].z[3]=1;
+
+	//a.Polygons[2].x=new double[4];
+	//a.Polygons[2].y=new double[4];
+	//a.Polygons[2].z=new double[4];
+	a.Polygons[2].PointCount=4;
+	a.Polygons[2].color=RGB(0,255,0);
+	a.Polygons[2].x[0]=0;
+	a.Polygons[2].y[0]=1;
+	a.Polygons[2].z[0]=1;
+	a.Polygons[2].x[1]=0;
+	a.Polygons[2].y[1]=-1;
+	a.Polygons[2].z[1]=1;
+	a.Polygons[2].x[2]=-5;
+	a.Polygons[2].y[2]=-1;
+	a.Polygons[2].z[2]=1;
+	a.Polygons[2].x[3]=-5;
+	a.Polygons[2].y[3]=1;
+	a.Polygons[2].z[3]=1;
+
+	//a.Polygons[3].x=new double[4];
+	//a.Polygons[3].y=new double[4];
+	//a.Polygons[3].z=new double[4];
+	a.Polygons[3].PointCount=4;
+	a.Polygons[3].color=RGB(0,255,0);
+	a.Polygons[3].x[0]=0;
+	a.Polygons[3].y[0]=1;
+	a.Polygons[3].z[0]=-1;
+	a.Polygons[3].x[1]=0;
+	a.Polygons[3].y[1]=-1;
+	a.Polygons[3].z[1]=-1;
+	a.Polygons[3].x[2]=-5;
+	a.Polygons[3].y[2]=-1;
+	a.Polygons[3].z[2]=-1;
+	a.Polygons[3].x[3]=-5;
+	a.Polygons[3].y[3]=1;
+	a.Polygons[3].z[3]=-1;
+
+	a.x=doc->world.Groups[0].x;
+	a.y=doc->world.Groups[0].y;
+	a.z=doc->world.Groups[0].z;
+	a.a=doc->world.Groups[0].a;
+
+	a.dx=cos(a.a/180*3.14159);
+	a.dy=sin(a.a/180*3.14159);
+
+	a.dexp=0;
+
+	doc->world.AddGroup(&a);
+
+	stimer=0;
 }

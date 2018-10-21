@@ -9,14 +9,32 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+//#include <afxtempl.h>
+
 class CPolygon  
 {
 public:
+	bool orderignore;
+	
 	COLORREF color;
+	COLORREF dcolor;
 	int PointCount;
-	double* z;
-	double* y;
-	double* x;
+	double dist;
+	//CArray <double,double> x;
+	//CArray <double,double> y;
+	//CArray <double,double> z;
+	double z[10];
+	double y[10];
+	double x[10];
+
+	double Nx;
+	double Ny;
+	double Nz;
+	double Sd;
+
+	//bool copy;
+
+	int split;
 	CPolygon();
 	virtual ~CPolygon();
 

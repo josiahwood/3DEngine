@@ -15,8 +15,8 @@ Class3=CMy3DEngineView
 Class4=CMainFrame
 
 ResourceCount=4
-Resource1=IDR_MAINFRAME
-Resource2=IDD_ABOUTBOX
+Resource1=IDD_ABOUTBOX
+Resource2=IDR_MAINFRAME
 Resource3=IDR_MY3DENTYPE
 Class5=CChildFrame
 Class6=CAboutDlg
@@ -39,7 +39,7 @@ Type=0
 HeaderFile=3DEngineView.h
 ImplementationFile=3DEngineView.cpp
 Filter=D
-LastObject=IDC_DOWN2
+LastObject=CMy3DEngineView
 BaseClass=CFormView
 VirtualFilter=VWC
 
@@ -49,6 +49,9 @@ Type=0
 HeaderFile=MainFrm.h
 ImplementationFile=MainFrm.cpp
 Filter=T
+BaseClass=CMDIFrameWnd
+VirtualFilter=fWC
+LastObject=CMainFrame
 
 
 [CLS:CChildFrame]
@@ -147,14 +150,5 @@ CommandCount=14
 [DLG:IDD_MY3DENGINE_FORM]
 Type=1
 Class=CMy3DEngineView
-ControlCount=9
-Control1=IDC_UP,button,1342242816
-Control2=IDC_RIGHT,button,1342242816
-Control3=IDC_DOWN,button,1342242816
-Control4=IDC_LEFT,button,1342242816
-Control5=IDC_UP2,button,1342242816
-Control6=IDC_RIGHT2,button,1342242816
-Control7=IDC_JOYSTICK,button,1342242816
-Control8=IDC_DOWN2,button,1342242816
-Control9=IDC_LEFT2,button,1342242816
+ControlCount=0
 

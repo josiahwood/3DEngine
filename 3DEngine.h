@@ -14,6 +14,8 @@
 
 #include "resource.h"       // main symbols
 
+#include <afxtempl.h>
+
 /////////////////////////////////////////////////////////////////////////////
 // CMy3DEngineApp:
 // See 3D Engine.cpp for the implementation of this class

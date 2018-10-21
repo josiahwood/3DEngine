@@ -3,42 +3,42 @@
 <pre>
 <h1>Build Log</h1>
 <h3>
---------------------Configuration: 3DEngine - Win32 Debug--------------------
+--------------------Configuration: 3DEngine - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "C:\WINDOWS\TEMP\RSP372.TMP" with contents
+Creating temporary file "C:\DOCUME~1\JOEYWO~1\LOCALS~1\Temp\RSP6.tmp" with contents
 [
-/nologo /MDd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"Debug/" /Fp"Debug/3DEngine.pch" /Yu"stdafx.h" /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
-"C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp"
+/nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fp"Release/3DEngine.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp"
 ]
-Creating command line "cl.exe @C:\WINDOWS\TEMP\RSP372.TMP" 
-Creating temporary file "C:\WINDOWS\TEMP\RSP0373.TMP" with contents
+Creating command line "cl.exe @C:\DOCUME~1\JOEYWO~1\LOCALS~1\Temp\RSP6.tmp" 
+Creating temporary file "C:\DOCUME~1\JOEYWO~1\LOCALS~1\Temp\RSP7.tmp" with contents
 [
-/nologo /subsystem:windows /incremental:yes /pdb:"Debug/3DEngine.pdb" /debug /machine:I386 /out:"Debug/3DEngine.exe" /pdbtype:sept 
-".\Debug\3DEngine.obj"
-".\Debug\3DEngineDoc.obj"
-".\Debug\3DEngineView.obj"
-".\Debug\ChildFrm.obj"
-".\Debug\Group.obj"
-".\Debug\Line.obj"
-".\Debug\MainFrm.obj"
-".\Debug\Polygon.obj"
-".\Debug\StdAfx.obj"
-".\Debug\World.obj"
-".\Debug\3DEngine.res"
+winmm.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/3DEngine.pdb" /machine:I386 /out:"Release/3DEngine.exe" 
+".\Release\3DEngine.obj"
+".\Release\3DEngineDoc.obj"
+".\Release\3DEngineView.obj"
+".\Release\ChildFrm.obj"
+".\Release\Group.obj"
+".\Release\Light.obj"
+".\Release\MainFrm.obj"
+".\Release\Polygon.obj"
+".\Release\StdAfx.obj"
+".\Release\World.obj"
+".\Release\3DEngine.res"
 ]
-Creating command line "link.exe @C:\WINDOWS\TEMP\RSP0373.TMP"
+Creating command line "link.exe @C:\DOCUME~1\JOEYWO~1\LOCALS~1\Temp\RSP7.tmp"
 <h3>Output Window</h3>
 Compiling...
 3DEngineView.cpp
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(150) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(150) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(402) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(402) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(403) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(403) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(674) : warning C4244: '=' : conversion from 'double' to 'long', possible loss of data
-C:\JNW Productions\Projects\3DEngine\3DEngineView.cpp(675) : warning C4244: '=' : conversion from 'double' to 'long', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(195) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(195) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(195) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(587) : warning C4244: 'initializing' : conversion from 'double' to 'int', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(594) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(594) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(602) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+C:\Documents and Settings\Joey Wood\My Documents\JNW Productions\Projects\3DEngine\3DEngineView.cpp(602) : warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
 Linking...
 
 

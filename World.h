@@ -10,10 +10,44 @@
 #endif // _MSC_VER > 1000
 
 #include "Group.h"
+#include "Light.h"
+//#include <afxtempl.h>
 
 class CWorld  
 {
 public:
+	void AddGroup(CGroup* a);
+	bool GroupIntersect(CGroup* a,CGroup* b);
+	int PolyIntersect(CPolygon* a,CPolygon* b);
+	void Physics();
+	CBitmap tbit;
+	CDC tdc;
+	double* zbuffer;
+
+	CPen* oldpen;
+	CPen* pen;
+	bool drawnext;
+	CBrush* oldbrush;
+	CBrush* brush;
+	void UpdateWall();
+	double wall;
+	//CArray <CLight,CLight> Lights;
+	CLight* Lights;
+	int LightCount;
+	double sqr(double x);
+	void DrawLight(CLight* Light);
+	int DrawCount;
+	void Draw();
+	double GetA(double x,double y);
+	void DrawPolygon(CPolygon* Polygon);
+	void AddPolygon(CPolygon *Polygon);
+	
+	CArray <CPolygon,CPolygon> Polygons;
+	//CPolygon* Polygons;
+	//int PolygonCount;
+	
+	void DrawPolygons();
+	CDC* dc;
 	double vw,vh;
 	CGroup* Groups;
 	int GroupCount;

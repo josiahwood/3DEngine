@@ -49,22 +49,33 @@ public:
 
 // Implementation
 public:
-	void DrawPolygons();
-	void AddPolygon(CPolygon* Polygon);
-	int PolygonCount;
-	CPolygon* Polygons;
-	void DrawPolygon(CPolygon* Polygon);
-	CDC* dc;
-	CPen BluePen;
-	CPen RedPen;
-	double GetY(double a,double d);
-	double GetX(double a,double d);
-	double GetA(double x,double y);
+	int stimer;
+	void Shoot();
+	bool KeyB;
+	bool KeyMinus;
+	bool KeyPlus;
+	bool KeySpace;
+	int m_Cut;
+	int PlayerIndex;
+	bool KeyUp;
+	bool KeyDown;
+	bool KeyLeft;
+	bool KeyRight;
+	
+	double LeftBorder;
+	bool RButtonDown;
+	CPoint MouseStart;
+	bool LButtonDown;
+	CDC tempdc;
+	CBitmap Bitmap;
+	void GetInput();
+	bool joyon;
 	JOYCAPS JoyCap;
 	
-	int vw,vh;
+	void Joystick();
+	void ReleasedcaptureCut(NMHDR* pNMHDR, LRESULT* pResult);
+
 	CWorld World;
-	void DrawLine(CLine Line);
 	virtual ~CMy3DEngineView();
 #ifdef _DEBUG
 	virtual void AssertValid() const;
@@ -76,16 +87,15 @@ protected:
 // Generated message map functions
 protected:
 	//{{AFX_MSG(CMy3DEngineView)
-	afx_msg void OnUp();
-	afx_msg void OnRight();
-	afx_msg void OnDown();
-	afx_msg void OnLeft();
-	afx_msg void OnUp2();
-	afx_msg void OnRight2();
-	afx_msg void OnDown2();
-	afx_msg void OnLeft2();
 	afx_msg void OnTimer(UINT nIDEvent);
-	afx_msg void OnJoystick();
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
