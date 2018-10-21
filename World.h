@@ -16,6 +16,8 @@
 class CWorld  
 {
 public:
+	int control;
+	void DrawRadar();
 	void AddGroup(CGroup* a);
 	bool GroupIntersect(CGroup* a,CGroup* b);
 	int PolyIntersect(CPolygon* a,CPolygon* b);

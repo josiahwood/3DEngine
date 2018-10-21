@@ -18,6 +18,8 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+#define M_PI 3.1415926535897932384626433832795
+
 /////////////////////////////////////////////////////////////////////////////
 // CMy3DEngineView
 
@@ -34,6 +36,7 @@ BEGIN_MESSAGE_MAP(CMy3DEngineView, CFormView)
 	ON_WM_SIZE()
 	ON_WM_KEYDOWN()
 	ON_WM_KEYUP()
+	ON_WM_MOUSEWHEEL()
 	//}}AFX_MSG_MAP
 	// Standard printing commands
 	ON_COMMAND(ID_FILE_PRINT, CFormView::OnFilePrint)
@@ -175,19 +178,25 @@ void CMy3DEngineView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 	doc->world.wall=(double)m_Cut/1.5+1;
 	
 #if STEREO
-	doc->world.cx-=5;
+	double px=doc->world.cx;
+	double py=doc->world.cy;
+	
+	doc->world.cx-=cos((doc->world.ca-90)/180.0*M_PI);
+	doc->world.cy-=sin((doc->world.ca-90)/180.0*M_PI);
 	doc->world.dc=&tempdc;
 	doc->world.Draw();
 
 	dc->BitBlt( 0,0,doc->world.vw,doc->world.vh,&tempdc,0,0,SRCCOPY);
 
-	doc->world.cx+=10;
+	doc->world.cx+=cos((doc->world.ca-90)/180.0*M_PI)*2;
+	doc->world.cy+=sin((doc->world.ca-90)/180.0*M_PI)*2;
 	doc->world.dc=&tempdc;
 	doc->world.Draw();
 
 	dc->BitBlt( doc->world.vw+1,0,doc->world.vw,doc->world.vh,&tempdc,0,0,SRCCOPY);
 
-	doc->world.cx-=5;
+	doc->world.cx=px;
+	doc->world.cy=py;
 #else
 	doc->world.dc=&tempdc;
 	doc->world.Draw();
@@ -278,6 +287,13 @@ void CMy3DEngineView::OnTimer(UINT nIDEvent)
 void CMy3DEngineView::Joystick() 
 {
 	joyon=!joyon;
+
+	CMy3DEngineDoc* doc=GetDocument();
+	
+	if(joyon)
+		doc->world.control=0;
+	else
+		doc->world.control=-1;
 	
 #if JOYSTICK
 	if(joyon)
@@ -314,9 +330,7 @@ void CMy3DEngineView::Joystick()
 }
 
 void CMy3DEngineView::GetInput()
-{
-	//return;
-	
+{	
 #if JOYSTICK
 	JOYINFO info;
 
@@ -580,7 +594,11 @@ void CMy3DEngineView::OnSize(UINT nType, int cx, int cy)
 	CFormView::OnSize(nType, cx, cy);
 	
 	CMy3DEngineDoc* doc=GetDocument();
-	doc->world.vw=cx-LeftBorder;
+#if STEREO
+	doc->world.vw=(cx-LeftBorder)/2;
+#else
+	doc->world.vw=(cx-LeftBorder);
+#endif
 	doc->world.vh=cy;
 
 	delete[]doc->world.zbuffer;
@@ -792,4 +810,15 @@ void CMy3DEngineView::Shoot()
 	doc->world.AddGroup(&a);
 
 	stimer=0;
+}
+
+BOOL CMy3DEngineView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 
+{
+	CMy3DEngineDoc* doc=GetDocument();
+
+	doc->world.cz+=zDelta/100.0;
+
+	OnUpdate(NULL,NULL,NULL);
+	
+	return CFormView::OnMouseWheel(nFlags, zDelta, pt);
 }

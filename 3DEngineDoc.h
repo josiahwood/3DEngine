@@ -32,6 +32,8 @@ public:
 
 // Implementation
 public:
+	void LoadShapes();
+	void LoadTank();
 	CWorld world;
 	virtual ~CMy3DEngineDoc();
 #ifdef _DEBUG

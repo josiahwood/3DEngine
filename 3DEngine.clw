@@ -15,8 +15,8 @@ Class3=CMy3DEngineView
 Class4=CMainFrame
 
 ResourceCount=4
-Resource1=IDD_ABOUTBOX
-Resource2=IDR_MAINFRAME
+Resource1=IDR_MAINFRAME
+Resource2=IDD_ABOUTBOX
 Resource3=IDR_MY3DENTYPE
 Class5=CChildFrame
 Class6=CAboutDlg

@@ -27,6 +27,10 @@ public:
 	double y[10];
 	double x[10];
 
+	double tz[10];
+	double ty[10];
+	double tx[10];
+
 	double Nx;
 	double Ny;
 	double Nz;

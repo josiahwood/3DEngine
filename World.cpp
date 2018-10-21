@@ -41,6 +41,8 @@ CWorld::CWorld()
 
 	vw=0;
 	vh=0;
+
+	control=-1;
 }
 
 CWorld::~CWorld()
@@ -716,9 +718,18 @@ void CWorld::Draw()
 						pg.x[z]=cos(a/180*M_PI)*d;
 						pg.y[z]=sin(a/180*M_PI)*d;
 					}
-					pg.x[z]+=Groups[x].x-cx;
-					pg.y[z]+=Groups[x].y-cy;
-					pg.z[z]+=Groups[x].z-cz;
+
+					pg.x[z]+=Groups[x].x;
+					pg.y[z]+=Groups[x].y;
+					pg.z[z]+=Groups[x].z;
+					
+					Groups[x].Polygons[y].tx[z]=pg.x[z];
+					Groups[x].Polygons[y].ty[z]=pg.y[z];
+					Groups[x].Polygons[y].tz[z]=pg.z[z];
+					
+					pg.x[z]-=cx;
+					pg.y[z]-=cy;
+					pg.z[z]-=cz;
 
 					ta=GetA(pg.x[z],pg.y[z])-(ca-90);
 					td=_hypot(pg.x[z],pg.y[z]);
@@ -737,6 +748,8 @@ void CWorld::Draw()
 	}
 	DrawLight(&Lights[0]);
 	DrawPolygons();
+
+	//DrawRadar();
 	//DrawCount++;
 }
 
@@ -864,6 +877,9 @@ double CWorld::sqr(double x)
 
 void CWorld::UpdateWall()
 {
+	if(wall<0)
+		wall=0;
+
 	/*Groups[3].a=ca-90;
 
 	Groups[3].x=cx;
@@ -954,6 +970,17 @@ void CWorld::Physics()
 		Groups[x].ry=0;
 		Groups[x].rz=0;
 
+		if(x==1 || x==2 && Groups[x].exp==0)
+		{
+			Groups[x].sz+=(rand()%3-1.0)/20.0;
+			if(Groups[x].sz>1)
+				Groups[x].sz=1;
+			if(Groups[x].sz<-1)
+				Groups[x].sz=-1;
+			Groups[x].dx=cos(Groups[x].a/180*3.14159)/4;
+			Groups[x].dy=sin(Groups[x].a/180*3.14159)/4;
+		}
+		
 		if(Groups[x].exp>5 || sqrt(sqr(Groups[x].x)+sqr(Groups[x].y)+sqr(Groups[x].z))>100)
 		{
 			if(x==0 || x==1 || x==2)
@@ -1104,4 +1131,53 @@ void CWorld::AddGroup(CGroup *a)
 	Groups[GroupCount]=*a;
 
 	GroupCount++;
+}
+
+void CWorld::DrawRadar()
+{	
+	dc->Ellipse(0,0,200,200);
+	
+	for(int x=0;x<GroupCount;x++)
+	{
+		if(!Groups[x].Visible)
+			continue;
+
+		for(int y=0;y<Groups[x].Polygons.GetSize();y++)
+		{
+			CPoint points[10];
+
+			for(int z=0;z<Groups[x].Polygons[y].PointCount;z++)
+			{
+				double t;
+				
+				if(control!=-1)
+				{
+					points[z].x=Groups[x].Polygons[y].tx[z]-Groups[control].x;
+					points[z].y=Groups[x].Polygons[y].ty[z]-Groups[control].y;
+
+					t=GetA(points[z].x,points[z].y);
+					t-=Groups[control].a-90;
+				}
+				else
+				{
+					points[z].x=Groups[x].Polygons[y].tx[z]-cx;
+					points[z].y=Groups[x].Polygons[y].ty[z]-cy;
+
+					t=GetA(points[z].x,points[z].y);
+					t-=ca-90;
+				}
+				
+				double len=_hypot(points[z].x,points[z].y);
+				points[z].x=cos(t/180*3.14159)*len;
+				points[z].y=sin(t/180*3.14159)*len;
+
+				points[z].x+=100;
+				points[z].y=-points[z].y+100;
+			}
+
+			points[Groups[x].Polygons[y].PointCount]=points[0];
+			
+			dc->Polyline(&points[0],Groups[x].Polygons[y].PointCount+1);
+		}
+	}
 }
